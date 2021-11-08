@@ -2,3 +2,4 @@ node_modules
 tempProcs
 Procedures
 .git
+.gitignore
