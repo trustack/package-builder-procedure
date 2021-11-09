@@ -1,5 +1,5 @@
 {
-  "name": "packagebuilder",
+  "name": "procedurebuilder",
   "version": "1.0.0",
   "description": "Trustack Procedure for building and packaging Trustack Procedures",
   "main": "index.js",
