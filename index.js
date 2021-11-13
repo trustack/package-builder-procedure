@@ -155,8 +155,11 @@ PackageBuilder.run_procedure = function (input = null, secrets = null) {
         let filename = key;
         packageBuilder.writeToFile(filename, tmpFolderPath, code);
       }
+      
       await packageBuilder.gzipPackage('Procedures', tmpFolderPath.split('\\')[1]);
-      let ipfsAddress = await packageBuilder.addToIpfs(path.join(tmpFolderPath, 'output.tgz'));
+      
+      if(input.doPublish == false) return;
+      let ipfsAddress = await packageBuilder.addToIpfs(path.join('Procedures', tmpFolderPath.split('\\')[1]));
       resolve(ipfsAddress);
     } catch (err) {
       reject(err.toString());
