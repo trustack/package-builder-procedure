@@ -3,19 +3,21 @@ const path = require('path');
 const tar = require('tar');
 const axios = require('axios');
 const FormData = require('form-data');
+const del = require('del');
 
 class PackageBuilder {
-/**
- * Constructor
- * @param {*} inputVar 
- * @param {*} secrets 
- */
+  /**
+   * Constructor
+   * @param {*} inputVar 
+   * @param {*} secrets 
+   */
   constructor(inputVar, secretsVar) {
     this.procedureCode = inputVar.code; // expected: {'file1.js':'data', 'file2.js':'data'}
     this.secrets = secretsVar;
     this.encryptKey = inputVar.encryptKey;
-    this.pinataApiKey = inputVar.secrets.pinataApiKey;
-    this.pinataSecretApiKey = inputVar.secrets.pinataSecretApiKey;
+    if (secretsVar == null) return;
+    this.pinataApiKey = secretsVar.pinataApiKey;
+    this.pinataSecretApiKey = secretsVar.pinataSecretApiKey;
   }
 
   packageSecrets(targetPath, secrets) {
@@ -23,6 +25,9 @@ class PackageBuilder {
   }
 
   prepareTempFolder() {
+    if (!fs.existsSync('Procedures')) {
+      fs.mkdirSync('Procedures');
+    }
     let tmpFolderPath = fs.mkdtempSync(path.join('Procedures', 'temp-'));
     return tmpFolderPath;
   }
@@ -41,7 +46,13 @@ class PackageBuilder {
 
   async cleanUp(path) {
     console.log(path);
-    await fs.rm(path, { recursive: true }, (err) => {
+    try{
+    await del(path); 
+    } catch(err){
+      console.log(err);
+    }
+    return;
+    fs.rm(path, { recursive: true, force: true }, (err) => {
       if (err) {
         throw err;
       }
@@ -51,9 +62,9 @@ class PackageBuilder {
 
   preparePackageManifest(options, tmpFolder) {
     let manifest = `{
-        "name": "",
+        "name": "<tbd>",
         "version": "1.0.0",
-        "description": "Procedure for packaging a Procedure and its secrets.",
+        "description": "<tbd>",
         "main": "index.js",
         "scripts": {
           "test": "echo 'Error: no test specified' && exit 1"
@@ -69,19 +80,21 @@ class PackageBuilder {
     this.writeToFile('package.json', tmpFolder, manifest);
   }
 
-  async gzipPackage(rootFolder) {
+  async gzipPackage(rootFolder, outputFilename) {
     return new Promise((resolve, reject) => {
-      
+
       let fileList = fs.readdirSync(rootFolder);
       tar.c(
         {
           gzip: true,
-          file: path.join(rootFolder,'output.tgz'),
+          file: path.join(rootFolder, `${outputFilename}.tgz`),
         },
         [rootFolder]
       ).then(_ => {
-        resolve(true)
-      });
+        resolve(true);
+      }).catch((err) => {
+        reject(err);
+      })
     })
   }
 
@@ -113,7 +126,7 @@ class PackageBuilder {
 
 }
 
-PackageBuilder.run_procedure = function(inputs = null) {
+PackageBuilder.run_procedure = function (input = null, secrets = null) {
   return new Promise(async (resolve, reject) => {
     /* Expected input JSON schema:
 { input :{
@@ -134,18 +147,20 @@ PackageBuilder.run_procedure = function(inputs = null) {
       packageBuilder = new PackageBuilder(input, secrets);
       tmpFolderPath = packageBuilder.prepareTempFolder();
       packageBuilder.preparePackageManifest(null, tmpFolderPath);
-      packageBuilder.packageSecrets(tmpFolderPath, inputs.secrets);
+      if (inputs.secrets) {
+        packageBuilder.packageSecrets(tmpFolderPath, inputs.secrets);
+      }
       for (let key in inputs.procedureCode) {
         let code = inputs.procedureCode[key];
         let filename = key;
-        packageBuilder.writeToFile(key, tmpFolderPath, inputs.procedureCode[key]);
+        packageBuilder.writeToFile(filename, tmpFolderPath, code);
       }
-      await packageBuilder.gzipPackage(tmpFolderPath);
-      let ipfsAddress = await packageBuilder.addToIpfs(path.join(tmpFolderPath,'output.tgz'));
+      await packageBuilder.gzipPackage('Procedures', tmpFolderPath.split('\\')[1]);
+      let ipfsAddress = await packageBuilder.addToIpfs(path.join(tmpFolderPath, 'output.tgz'));
       resolve(ipfsAddress);
     } catch (err) {
       reject(err.toString());
-    } finally{
+    } finally {
       await packageBuilder.cleanUp(tmpFolderPath);
     }
   });
