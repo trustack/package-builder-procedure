@@ -1,8 +1,9 @@
 {
-  "name": "procedurebuilder",
+  "name": "trst-proc-bldr",
   "version": "1.0.0",
   "description": "Trustack Procedure for building and packaging Trustack Procedures",
   "main": "index.js",
+  "bin":"index.js",
   "directories": {
     "test": "test"
   },
