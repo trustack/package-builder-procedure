@@ -225,14 +225,11 @@ class PackageBuilder {
         }
       })
       .then(function (response) {
-        console.log(`Procedure published at: ${response}`);
         return response.data.IpfsHash;
-        //handle response here
       })
       .catch(function (err) {
         console.warn(`Error pinning to Pinata: ${err}`);
         return error;
-        //handle error here
       });
   }
 
@@ -259,7 +256,7 @@ PackageBuilder.run_procedure = async function (input = null, secrets = null) {
       packageBuilder = new PackageBuilder(input, secrets);
       await packageBuilder.init();
 
-
+      let outputFilename;
       if (inputs.procedureCode) {
         tmpFolderPath = packageBuilder.prepareTempFolder();
 
@@ -280,7 +277,7 @@ PackageBuilder.run_procedure = async function (input = null, secrets = null) {
       else if (inputs.procPath) {
         let procPath = inputs.procPath;
         if (inputs.secrets) packageBuilder.packageSecrets(procPath, inputs.secrets);
-        let outputFilename;
+        
 
         if (inputs.output) {
           outputFilename = inputs.output;
@@ -294,7 +291,7 @@ PackageBuilder.run_procedure = async function (input = null, secrets = null) {
 
       console.log("Procedure package successfully created.");
       if (input.doPublish == false) return true;
-      let ipfsAddress = await packageBuilder.addToIpfs(path.join('Procedures', tmpFolderPath.split('\\')[1]));
+      let ipfsAddress = await packageBuilder.addToIpfs(outputFilename);
       console.log(`Procedure published at ${ipfsAddress}.`);
       resolve(ipfsAddress);
     } catch (err) {
