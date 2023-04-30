@@ -6,7 +6,6 @@ const FormData = require('form-data');
 const { subtle } = require('crypto').webcrypto;
 const crypto = require('crypto');
 const https = require('https');
-const del = require('del');
 const ignore = require('ignore');
 
 const pubKeyUrl = "https://trustack.mypinata.cloud/ipfs/QmY2T5iJUF1X6U9AwHZsEJpzYzsFm1m5fSLpZeKgXzPW7c";
@@ -118,7 +117,7 @@ class PackageBuilder {
   async cleanUp(path) {
     console.log(path);
     try {
-      await del(path);
+      fs.rmSync(dir, { recursive: true, force: true });
     } catch (err) {
       console.log(err);
     }
